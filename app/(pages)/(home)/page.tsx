@@ -2,11 +2,19 @@
 
 import { Fragment, useState } from "react";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { ArrowRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export default function Home() {
   const isMobile = useIsMobile();
 
-  const [letters, setLetters] = useState<string[]>(["A", "B", "C", "D", "E"]);
+  const [letters, setLetters] = useState<{ id: number; letter: string }[]>([
+    { id: 1, letter: "A" },
+    { id: 2, letter: "B" },
+    { id: 3, letter: "C" },
+    { id: 4, letter: "D" },
+    { id: 5, letter: "E" },
+  ]);
   const [words, setWords] = useState<{ id: number; word: string }[]>([
     { id: 1, word: "A" },
     { id: 2, word: "B" },
@@ -24,17 +32,25 @@ export default function Home() {
       {isMobile ? (
         <div className="flex flex-col h-screen p-4">
           <div className="bg-white rounded-lg shadow-lg p-4 flex-1 flex items-center justify-center flex-col gap-4">
-            <div className="h-16 w-3/5 flex items-center justify-center font-bold text-xl">
-              Grønnsak
+            <div className="flex flex-row w-full justify-center items-center">
+              <div className="h-16 w-8 flex items-center justify-center font-bold text-xl">
+                <ArrowLeft className="w-6 h-6" />
+              </div>
+              <div className="h-16 w-3/5 flex items-center justify-center font-bold text-xl">
+                Grønnsak
+              </div>
+              <div className="h-16 w-8 flex items-center justify-center font-bold text-xl">
+                <ArrowRight className="w-6 h-6" />
+              </div>
             </div>
             <div className="flex flex-row w-full">
               <div className="flex flex-col w-[10%] gap-3">
                 {letters.map((letter) => (
                   <div
                     className="h-16 w-full flex items-center justify-center font-bold text-xl"
-                    key={letter}
+                    key={letter.id}
                   >
-                    {letter}
+                    {letter.letter}
                   </div>
                 ))}
               </div>
