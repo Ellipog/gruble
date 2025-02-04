@@ -126,6 +126,9 @@ export default function Home() {
   };
 
   const handleGeneratePDF = async () => {
+    // Check if we're on the client side
+    if (typeof window === "undefined") return;
+
     if (selectedCategories.length < 5) {
       toast.error(
         "Please select at least 5 categories before generating the PDF",
@@ -154,7 +157,8 @@ export default function Home() {
           border: "1px solid #bbf7d0",
         },
       });
-    } catch {
+    } catch (error) {
+      console.error("PDF generation error:", error);
       toast.error("Failed to generate PDF. Please try again.", {
         duration: 3000,
         position: "bottom-center",
