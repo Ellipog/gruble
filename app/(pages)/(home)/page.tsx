@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { lists } from "@/data/wordCategories";
 import { ListSelection } from "@/app/components/ListSelection";
 import { GrubleGrid } from "@/app/components/GrubleGrid";
+import { DesktopMessage } from "@/app/components/DesktopMessage";
 import { Shuffle, RefreshCw } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -22,11 +23,19 @@ export default function Home() {
   const [letters, setLetters] = useState<string>("");
   const [isGridVisible, setIsGridVisible] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showDesktopMessage, setShowDesktopMessage] = useState(false);
 
   useEffect(() => {
     shuffleCategories();
     generateLetters();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Check if screen width is larger than mobile
+    const checkScreenSize = () => {
+      setShowDesktopMessage(window.innerWidth >= 768);
+    };
+
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   const shuffleCategories = () => {
@@ -175,17 +184,22 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      <AnimatePresence>
+        {showDesktopMessage && (
+          <DesktopMessage onContinue={() => setShowDesktopMessage(false)} />
+        )}
+      </AnimatePresence>
       <Toaster />
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 sm:space-y-12">
         {/* Header */}
         <motion.header
-          className="text-center space-y-4"
+          className="text-center space-y-4 sm:space-y-6"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <motion.h1
-            className="text-4xl font-bold text-slate-800"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-800"
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.3, delay: 0.2 }}
@@ -193,7 +207,7 @@ export default function Home() {
             Gruble Sheet Generator
           </motion.h1>
           <motion.p
-            className="text-slate-600 max-w-2xl mx-auto"
+            className="text-slate-600 text-lg sm:text-xl max-w-3xl mx-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.4 }}
@@ -204,17 +218,17 @@ export default function Home() {
         </motion.header>
 
         {/* Main Content */}
-        <div className="grid gap-8 md:grid-cols-[2fr_1fr]">
+        <div className="grid gap-8 lg:gap-12 md:grid-cols-[3fr_2fr]">
           {/* Left Column - Game Settings */}
           <motion.div
-            className="space-y-6"
+            className="space-y-6 lg:space-y-8"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <motion.section
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
-              whileHover={{ y: -2, shadow: "0 8px 30px rgba(0,0,0,0.12)" }}
+              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8 transition-all duration-300"
+              whileHover={{ y: -2, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
               transition={{ duration: 0.2 }}
             >
               <h2 className="text-xl font-semibold text-slate-800 mb-4">
@@ -229,8 +243,8 @@ export default function Home() {
             </motion.section>
 
             <motion.section
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
-              whileHover={{ y: -2, shadow: "0 8px 30px rgba(0,0,0,0.12)" }}
+              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8 transition-all duration-300"
+              whileHover={{ y: -2, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
               transition={{ duration: 0.2 }}
             >
               <div className="flex items-center justify-between mb-4">
@@ -252,16 +266,18 @@ export default function Home() {
                   {selectedCategories.map((category, index) => (
                     <motion.div
                       key={category + index}
-                      className="flex items-center p-3 bg-slate-50 rounded-lg"
+                      className="flex items-center p-3 sm:p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ duration: 0.2, delay: index * 0.05 }}
                     >
-                      <span className="w-8 h-8 flex items-center justify-center bg-indigo-100 text-indigo-600 rounded-full font-medium">
+                      <span className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-indigo-100 text-indigo-600 rounded-full font-medium">
                         {index + 1}
                       </span>
-                      <span className="ml-3 text-slate-700">{category}</span>
+                      <span className="ml-3 text-slate-700 text-base sm:text-lg">
+                        {category}
+                      </span>
                     </motion.div>
                   ))}
                 </div>
@@ -299,7 +315,7 @@ export default function Home() {
                 {letters.split("").map((letter, index) => (
                   <motion.div
                     key={letter + index}
-                    className="aspect-square flex items-center justify-center bg-slate-50 rounded-lg text-2xl font-bold text-slate-700"
+                    className="aspect-square flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-lg text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-700 transition-colors"
                     initial={{ opacity: 0, scale: 0.5, rotateX: -180 }}
                     animate={{ opacity: 1, scale: 1, rotateX: 0 }}
                     transition={{
@@ -325,20 +341,20 @@ export default function Home() {
             </motion.section>
 
             <motion.section
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
-              whileHover={{ y: -2, shadow: "0 8px 30px rgba(0,0,0,0.12)" }}
+              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8 transition-all duration-300"
+              whileHover={{ y: -2, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
               transition={{ duration: 0.2 }}
             >
-              <h2 className="text-xl font-semibold text-slate-800 mb-4">
+              <h2 className="text-xl sm:text-2xl font-semibold text-slate-800 mb-4">
                 Generate PDF
               </h2>
               <motion.button
                 onClick={handleGeneratePDF}
                 disabled={isGenerating || selectedCategories.length < 5}
-                className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                className={`w-full py-3 sm:py-4 px-4 rounded-lg font-medium text-lg transition-all duration-300 ${
                   isGenerating || selectedCategories.length < 5
                     ? "bg-slate-400 cursor-not-allowed"
-                    : "bg-green-500 hover:bg-green-600 text-white"
+                    : "bg-green-500 hover:bg-green-600 hover:shadow-lg active:scale-[0.98] text-white"
                 }`}
                 whileHover={
                   !isGenerating && selectedCategories.length >= 5
@@ -361,8 +377,6 @@ export default function Home() {
           </motion.div>
         </div>
       </div>
-
-      <div className="mb-[99999999rem]" />
 
       <GrubleGrid
         isVisible={isGridVisible}
