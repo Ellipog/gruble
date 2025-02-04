@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { lists } from "@/data/wordCategories";
 import { ListSelection } from "@/app/components/ListSelection";
 import { GrubleGrid } from "@/app/components/GrubleGrid";
-import { generatePDF } from "@/app/utils/generatePDF";
 import { Shuffle, RefreshCw } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -126,7 +125,6 @@ export default function Home() {
   };
 
   const handleGeneratePDF = async () => {
-    // Check if we're on the client side
     if (typeof window === "undefined") return;
 
     if (selectedCategories.length < 5) {
@@ -147,6 +145,8 @@ export default function Home() {
 
     setIsGenerating(true);
     try {
+      // Dynamically import the generatePDF function
+      const { generatePDF } = await import("@/app/utils/generatePDF");
       await generatePDF({ setIsGridVisible });
       toast.success("PDF generated successfully!", {
         duration: 3000,

@@ -6,6 +6,11 @@ interface GeneratePDFOptions {
 }
 
 export const generatePDF = async ({ setIsGridVisible }: GeneratePDFOptions) => {
+  // Early return if not in browser environment
+  if (typeof window === "undefined") {
+    return;
+  }
+
   setIsGridVisible(true); // Show the grid
 
   // Wait for the next render cycle
