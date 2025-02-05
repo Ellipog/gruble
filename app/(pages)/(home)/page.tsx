@@ -1,14 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { lists } from "@/data/wordCategories";
-import { ListSelection } from "@/app/components/ListSelection";
-import { GrubleGrid } from "@/app/components/GrubleGrid";
-import { DesktopMessage } from "@/app/components/DesktopMessage";
-import { Shuffle, RefreshCw } from "lucide-react";
+import { ListSelection } from "@/components/ListSelection";
+import { GrubleGrid } from "@/components/GrubleGrid";
+import { LettersGrid } from "@/components/LettersGrid";
+import { SelectedCategories } from "@/components/SelectedCategories";
 import toast, { Toaster } from "react-hot-toast";
+import {
+  CustomCategories,
+  loadCustomCategories,
+  saveCustomCategories,
+} from "@/data/customCategories";
 
-const CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ";
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ";
 
 export default function Home() {
   const [enabledLists, setEnabledLists] = useState<string[]>([
@@ -23,54 +28,98 @@ export default function Home() {
   const [letters, setLetters] = useState<string>("");
   const [isGridVisible, setIsGridVisible] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showDesktopMessage, setShowDesktopMessage] = useState(false);
+  const [isGeneratingEmpty, setIsGeneratingEmpty] = useState(false);
+  const [customCategories, setCustomCategories] = useState<CustomCategories>(
+    {}
+  );
 
   useEffect(() => {
+    setCustomCategories(loadCustomCategories());
     shuffleCategories();
     generateLetters();
-    // Check if screen width is larger than mobile
-    const checkScreenSize = () => {
-      setShowDesktopMessage(window.innerWidth >= 768);
-    };
-
-    checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
-    return () => window.removeEventListener("resize", checkScreenSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const shuffleCategories = () => {
     const availableCategories = Object.entries(enabledCategories).flatMap(
       ([listId, categoryIds]) => {
-        const list = lists[listId as keyof typeof lists];
+        const list =
+          lists[listId as keyof typeof lists] || customCategories[listId];
+        if (!list) return [];
         return list.categories.filter((cat) => categoryIds.includes(cat.id));
       }
     );
 
     if (availableCategories.length === 0) {
       // If no categories are enabled, use all categories from all lists
-      const allCategories = Object.values(lists).flatMap(
-        (list) => list.categories
-      );
-      const shuffled = [...allCategories]
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 5)
+      const allCategories = [
+        ...Object.values(lists).flatMap((list) => list.categories),
+        ...Object.values(customCategories).flatMap((list) => list.categories),
+      ];
+      const shuffled = Array(5)
+        .fill(null)
+        .map(
+          () => allCategories[Math.floor(Math.random() * allCategories.length)]
+        )
         .map((cat) => cat.category);
       setSelectedCategories(shuffled);
       return;
     }
 
-    const shuffled = [...availableCategories]
-      .sort(() => 0.5 - Math.random())
-      .slice(0, Math.min(5, availableCategories.length))
+    const shuffled = Array(5)
+      .fill(null)
+      .map(
+        () =>
+          availableCategories[
+            Math.floor(Math.random() * availableCategories.length)
+          ]
+      )
       .map((cat) => cat.category);
     setSelectedCategories(shuffled);
+  };
+
+  const shuffleSingleCategory = (index: number) => {
+    const availableCategories = Object.entries(enabledCategories).flatMap(
+      ([listId, categoryIds]) => {
+        const list =
+          lists[listId as keyof typeof lists] || customCategories[listId];
+        if (!list) return [];
+        return list.categories.filter((cat) => categoryIds.includes(cat.id));
+      }
+    );
+
+    if (availableCategories.length === 0) {
+      // If no categories are enabled, use all categories from all lists
+      const allCategories = [
+        ...Object.values(lists).flatMap((list) => list.categories),
+        ...Object.values(customCategories).flatMap((list) => list.categories),
+      ];
+      const newCategory =
+        allCategories[Math.floor(Math.random() * allCategories.length)]
+          .category;
+      setSelectedCategories((prev) => {
+        const newCategories = [...prev];
+        newCategories[index] = newCategory;
+        return newCategories;
+      });
+      return;
+    }
+
+    const newCategory =
+      availableCategories[
+        Math.floor(Math.random() * availableCategories.length)
+      ].category;
+    setSelectedCategories((prev) => {
+      const newCategories = [...prev];
+      newCategories[index] = newCategory;
+      return newCategories;
+    });
   };
 
   const generateLetters = () => {
     let result = "";
     while (result.length < 5) {
-      const randomChar =
-        CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
+      const randomChar = LETTERS[Math.floor(Math.random() * LETTERS.length)];
       if (!result.includes(randomChar)) {
         result += randomChar;
       }
@@ -78,8 +127,23 @@ export default function Home() {
     setLetters(result);
   };
 
+  const generateSingleLetter = (index: number) => {
+    setLetters((prev) => {
+      let newLetter;
+      do {
+        newLetter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+      } while (prev.includes(newLetter));
+
+      const newLetters = prev.split("");
+      newLetters[index] = newLetter;
+      return newLetters.join("");
+    });
+  };
+
   const toggleList = (listId: string) => {
-    const list = lists[listId as keyof typeof lists];
+    const list =
+      lists[listId as keyof typeof lists] || customCategories[listId];
+    if (!list) return;
 
     setEnabledLists((prev) => {
       const isCurrentlyEnabled = prev.includes(listId);
@@ -137,27 +201,25 @@ export default function Home() {
     if (typeof window === "undefined") return;
 
     if (selectedCategories.length < 5) {
-      toast.error(
-        "Please select at least 5 categories before generating the PDF",
-        {
-          duration: 3000,
-          position: "bottom-center",
-          style: {
-            background: "#fee2e2",
-            color: "#991b1b",
-            border: "1px solid #fecaca",
-          },
-        }
-      );
+      toast.error("Velg minst 5 kategorier før du genererer PDF", {
+        duration: 3000,
+        position: "bottom-center",
+        style: {
+          background: "#fee2e2",
+          color: "#991b1b",
+          border: "1px solid #fecaca",
+        },
+      });
       return;
     }
 
     setIsGenerating(true);
+    setIsGeneratingEmpty(false);
     try {
       // Dynamically import the generatePDF function
       const { generatePDF } = await import("@/app/utils/generatePDF");
       await generatePDF({ setIsGridVisible });
-      toast.success("PDF generated successfully!", {
+      toast.success("PDF generert!", {
         duration: 3000,
         position: "bottom-center",
         style: {
@@ -167,8 +229,8 @@ export default function Home() {
         },
       });
     } catch (error) {
-      console.error("PDF generation error:", error);
-      toast.error("Failed to generate PDF. Please try again.", {
+      console.error("PDF generering feilet:", error);
+      toast.error("Kunne ikke generere PDF. Vennligst prøv igjen.", {
         duration: 3000,
         position: "bottom-center",
         style: {
@@ -182,13 +244,61 @@ export default function Home() {
     }
   };
 
+  const handleGenerateEmptyPDF = async () => {
+    if (typeof window === "undefined") return;
+
+    if (selectedCategories.length < 5) {
+      toast.error("Velg minst 5 kategorier før du genererer PDF", {
+        duration: 3000,
+        position: "bottom-center",
+        style: {
+          background: "#fee2e2",
+          color: "#991b1b",
+          border: "1px solid #fecaca",
+        },
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    setIsGeneratingEmpty(true);
+    try {
+      // Dynamically import the generatePDF function
+      const { generatePDF } = await import("@/app/utils/generatePDF");
+      await generatePDF({ setIsGridVisible, emptySheet: true });
+      toast.success("Tom PDF generert!", {
+        duration: 3000,
+        position: "bottom-center",
+        style: {
+          background: "#dcfce7",
+          color: "#166534",
+          border: "1px solid #bbf7d0",
+        },
+      });
+    } catch (error) {
+      console.error("Tom PDF generering feilet:", error);
+      toast.error("Kunne ikke generere tom PDF. Vennligst prøv igjen.", {
+        duration: 3000,
+        position: "bottom-center",
+        style: {
+          background: "#fee2e2",
+          color: "#991b1b",
+          border: "1px solid #fecaca",
+        },
+      });
+    } finally {
+      setIsGeneratingEmpty(false);
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCustomCategoriesChange = (categories: CustomCategories) => {
+    setCustomCategories(categories);
+    saveCustomCategories(categories);
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <AnimatePresence>
-        {showDesktopMessage && (
-          <DesktopMessage onContinue={() => setShowDesktopMessage(false)} />
-        )}
-      </AnimatePresence>
       <Toaster />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 sm:space-y-12">
         {/* Header */}
@@ -204,7 +314,7 @@ export default function Home() {
             animate={{ scale: 1 }}
             transition={{ duration: 0.3, delay: 0.2 }}
           >
-            Gruble Sheet Generator
+            Gruble-ark Generator
           </motion.h1>
           <motion.p
             className="text-slate-600 text-lg sm:text-xl max-w-3xl mx-auto"
@@ -212,8 +322,8 @@ export default function Home() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.4 }}
           >
-            Generate custom word game sheets with your preferred categories and
-            letters
+            Generer egendefinerte gruble-ark med dine foretrukne kategorier og
+            bokstaver
           </motion.p>
         </motion.header>
 
@@ -232,57 +342,23 @@ export default function Home() {
               transition={{ duration: 0.2 }}
             >
               <h2 className="text-xl font-semibold text-slate-800 mb-4">
-                Word Categories
+                Kategori Lister
               </h2>
               <ListSelection
                 enabledLists={enabledLists}
                 onToggleList={toggleList}
                 enabledCategories={enabledCategories}
                 onToggleCategory={toggleCategory}
+                customCategories={customCategories}
+                onCustomCategoriesChange={handleCustomCategoriesChange}
               />
             </motion.section>
 
-            <motion.section
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8 transition-all duration-300"
-              whileHover={{ y: -2, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Selected Categories
-                </h2>
-                <motion.button
-                  onClick={shuffleCategories}
-                  className="p-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Shuffle Categories"
-                >
-                  <Shuffle className="w-5 h-5" />
-                </motion.button>
-              </div>
-              <AnimatePresence mode="popLayout">
-                <div className="grid grid-cols-1 gap-2">
-                  {selectedCategories.map((category, index) => (
-                    <motion.div
-                      key={category + index}
-                      className="flex items-center p-3 sm:p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.2, delay: index * 0.05 }}
-                    >
-                      <span className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-indigo-100 text-indigo-600 rounded-full font-medium">
-                        {index + 1}
-                      </span>
-                      <span className="ml-3 text-slate-700 text-base sm:text-lg">
-                        {category}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-              </AnimatePresence>
-            </motion.section>
+            <SelectedCategories
+              selectedCategories={selectedCategories}
+              onShuffleAll={shuffleCategories}
+              onShuffleSingle={shuffleSingleCategory}
+            />
           </motion.div>
 
           {/* Right Column - Letters and Actions */}
@@ -292,53 +368,11 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <motion.section
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
-              whileHover={{ y: -2, shadow: "0 8px 30px rgba(0,0,0,0.12)" }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Letters
-                </h2>
-                <motion.button
-                  onClick={generateLetters}
-                  className="p-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Generate New Letters"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                </motion.button>
-              </div>
-              <div className="grid grid-cols-5 gap-2">
-                {letters.split("").map((letter, index) => (
-                  <motion.div
-                    key={letter + index}
-                    className="aspect-square flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-lg text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-700 transition-colors"
-                    initial={{ opacity: 0, scale: 0.5, rotateX: -180 }}
-                    animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-                    transition={{
-                      duration: 0.4,
-                      delay: index * 0.1,
-                      type: "spring",
-                      stiffness: 150,
-                    }}
-                  >
-                    <motion.span
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: 0.2,
-                        delay: index * 0.1 + 0.2,
-                      }}
-                    >
-                      {letter}
-                    </motion.span>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
+            <LettersGrid
+              letters={letters}
+              onGenerateLetters={generateLetters}
+              onGenerateSingleLetter={generateSingleLetter}
+            />
 
             <motion.section
               className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8 transition-all duration-300"
@@ -346,33 +380,60 @@ export default function Home() {
               transition={{ duration: 0.2 }}
             >
               <h2 className="text-xl sm:text-2xl font-semibold text-slate-800 mb-4">
-                Generate PDF
+                Opprett PDF
               </h2>
-              <motion.button
-                onClick={handleGeneratePDF}
-                disabled={isGenerating || selectedCategories.length < 5}
-                className={`w-full py-3 sm:py-4 px-4 rounded-lg font-medium text-lg transition-all duration-300 ${
-                  isGenerating || selectedCategories.length < 5
-                    ? "bg-slate-400 cursor-not-allowed"
-                    : "bg-green-500 hover:bg-green-600 hover:shadow-lg active:scale-[0.98] text-white"
-                }`}
-                whileHover={
-                  !isGenerating && selectedCategories.length >= 5
-                    ? { scale: 1.02 }
-                    : {}
-                }
-                whileTap={
-                  !isGenerating && selectedCategories.length >= 5
-                    ? { scale: 0.98 }
-                    : {}
-                }
-              >
-                {isGenerating
-                  ? "Generating..."
-                  : selectedCategories.length < 5
-                  ? `Select ${5 - selectedCategories.length} more categories`
-                  : "Download PDF"}
-              </motion.button>
+              <div className="flex gap-3">
+                <motion.button
+                  onClick={handleGeneratePDF}
+                  disabled={isGenerating || selectedCategories.length < 5}
+                  className={`flex-1 py-3 sm:py-4 px-4 rounded-lg font-medium text-lg transition-all duration-300 ${
+                    isGenerating || selectedCategories.length < 5
+                      ? "bg-slate-400 cursor-not-allowed"
+                      : "bg-indigo-500 hover:bg-indigo-600 hover:shadow-lg active:scale-[0.98] text-white"
+                  }`}
+                  whileHover={
+                    !isGenerating && selectedCategories.length >= 5
+                      ? { scale: 1.02 }
+                      : {}
+                  }
+                  whileTap={
+                    !isGenerating && selectedCategories.length >= 5
+                      ? { scale: 0.98 }
+                      : {}
+                  }
+                >
+                  {isGenerating
+                    ? "Genererer..."
+                    : selectedCategories.length < 5
+                    ? `Velg ${5 - selectedCategories.length} flere kategorier`
+                    : "Last ned PDF"}
+                </motion.button>
+                <motion.button
+                  onClick={handleGenerateEmptyPDF}
+                  disabled={isGenerating || selectedCategories.length < 5}
+                  className={`py-3 sm:py-4 px-4 rounded-lg font-medium text-lg transition-all duration-300 ${
+                    isGenerating || selectedCategories.length < 5
+                      ? "bg-slate-400 cursor-not-allowed"
+                      : "bg-slate-100 hover:bg-slate-200 hover:shadow-lg active:scale-[0.98] text-slate-700"
+                  }`}
+                  whileHover={
+                    !isGenerating && selectedCategories.length >= 5
+                      ? { scale: 1.02 }
+                      : {}
+                  }
+                  whileTap={
+                    !isGenerating && selectedCategories.length >= 5
+                      ? { scale: 0.98 }
+                      : {}
+                  }
+                >
+                  {isGenerating
+                    ? "Genererer..."
+                    : selectedCategories.length < 5
+                    ? `Velg ${5 - selectedCategories.length} flere kategorier`
+                    : "Tom"}
+                </motion.button>
+              </div>
             </motion.section>
           </motion.div>
         </div>
@@ -382,6 +443,7 @@ export default function Home() {
         isVisible={isGridVisible}
         selectedCategories={selectedCategories}
         letters={letters}
+        emptySheet={isGeneratingEmpty}
       />
     </main>
   );

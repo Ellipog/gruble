@@ -3,9 +3,13 @@ import html2pdf from "html2pdf.js";
 
 interface GeneratePDFOptions {
   setIsGridVisible: (visible: boolean) => void;
+  emptySheet?: boolean;
 }
 
-export const generatePDF = async ({ setIsGridVisible }: GeneratePDFOptions) => {
+export const generatePDF = async ({
+  setIsGridVisible,
+  emptySheet = false,
+}: GeneratePDFOptions) => {
   // Early return if not in browser environment
   if (typeof window === "undefined") {
     return;
@@ -98,7 +102,7 @@ export const generatePDF = async ({ setIsGridVisible }: GeneratePDFOptions) => {
       Object.assign(scissorsIcon.style, {
         fontSize: "20px",
         position: "relative",
-        top: "0px",
+        top: "16px",
       });
 
       lineContent.appendChild(leftLine);
@@ -115,10 +119,10 @@ export const generatePDF = async ({ setIsGridVisible }: GeneratePDFOptions) => {
 
   const opt = {
     margin: 0,
-    filename: "gruble-sheet.pdf",
+    filename: `gruble-sheet${emptySheet ? "-empty" : ""}.pdf`,
     image: { type: "jpeg", quality: 0.98 },
     html2canvas: {
-      scale: 2,
+      scale: 5,
       useCORS: true,
       letterRendering: true,
       scrollX: 0,
