@@ -56,26 +56,58 @@ export default function Home() {
         ...Object.values(lists).flatMap((list) => list.categories),
         ...Object.values(customCategories).flatMap((list) => list.categories),
       ];
-      const shuffled = Array(5)
-        .fill(null)
-        .map(
-          () => allCategories[Math.floor(Math.random() * allCategories.length)]
-        )
-        .map((cat) => cat.category);
-      setSelectedCategories(shuffled);
+
+      // Shuffle all categories and take first 5 unique ones
+      const shuffled = [...allCategories].sort(() => Math.random() - 0.5);
+      const uniqueCategories = Array.from(
+        new Set(shuffled.map((cat) => cat.category))
+      ).slice(0, 5);
+
+      // If we don't have enough unique categories, show an error
+      if (uniqueCategories.length < 5) {
+        toast.error(
+          "Ikke nok unike kategorier tilgjengelig. Vennligst velg flere kategorier.",
+          {
+            duration: 3000,
+            position: "bottom-center",
+            style: {
+              background: "#fee2e2",
+              color: "#991b1b",
+              border: "1px solid #fecaca",
+            },
+          }
+        );
+        return;
+      }
+
+      setSelectedCategories(uniqueCategories);
       return;
     }
 
-    const shuffled = Array(5)
-      .fill(null)
-      .map(
-        () =>
-          availableCategories[
-            Math.floor(Math.random() * availableCategories.length)
-          ]
-      )
-      .map((cat) => cat.category);
-    setSelectedCategories(shuffled);
+    // For enabled categories, shuffle and ensure uniqueness
+    const shuffled = [...availableCategories].sort(() => Math.random() - 0.5);
+    const uniqueCategories = Array.from(
+      new Set(shuffled.map((cat) => cat.category))
+    ).slice(0, 5);
+
+    // If we don't have enough unique categories, show an error
+    if (uniqueCategories.length < 5) {
+      toast.error(
+        "Ikke nok unike kategorier tilgjengelig. Vennligst velg flere kategorier.",
+        {
+          duration: 3000,
+          position: "bottom-center",
+          style: {
+            background: "#fee2e2",
+            color: "#991b1b",
+            border: "1px solid #fecaca",
+          },
+        }
+      );
+      return;
+    }
+
+    setSelectedCategories(uniqueCategories);
   };
 
   const shuffleSingleCategory = (index: number) => {
@@ -94,8 +126,29 @@ export default function Home() {
         ...Object.values(lists).flatMap((list) => list.categories),
         ...Object.values(customCategories).flatMap((list) => list.categories),
       ];
+
+      // Filter out categories that are already selected (except the one being replaced)
+      const currentCategories = new Set(selectedCategories);
+      currentCategories.delete(selectedCategories[index]); // Remove the category being replaced
+      const availableUnique = allCategories.filter(
+        (cat) => !currentCategories.has(cat.category)
+      );
+
+      if (availableUnique.length === 0) {
+        toast.error("Ingen flere unike kategorier tilgjengelig.", {
+          duration: 3000,
+          position: "bottom-center",
+          style: {
+            background: "#fee2e2",
+            color: "#991b1b",
+            border: "1px solid #fecaca",
+          },
+        });
+        return;
+      }
+
       const newCategory =
-        allCategories[Math.floor(Math.random() * allCategories.length)]
+        availableUnique[Math.floor(Math.random() * availableUnique.length)]
           .category;
       setSelectedCategories((prev) => {
         const newCategories = [...prev];
@@ -105,10 +158,29 @@ export default function Home() {
       return;
     }
 
+    // Filter out categories that are already selected (except the one being replaced)
+    const currentCategories = new Set(selectedCategories);
+    currentCategories.delete(selectedCategories[index]); // Remove the category being replaced
+    const availableUnique = availableCategories.filter(
+      (cat) => !currentCategories.has(cat.category)
+    );
+
+    if (availableUnique.length === 0) {
+      toast.error("Ingen flere unike kategorier tilgjengelig.", {
+        duration: 3000,
+        position: "bottom-center",
+        style: {
+          background: "#fee2e2",
+          color: "#991b1b",
+          border: "1px solid #fecaca",
+        },
+      });
+      return;
+    }
+
     const newCategory =
-      availableCategories[
-        Math.floor(Math.random() * availableCategories.length)
-      ].category;
+      availableUnique[Math.floor(Math.random() * availableUnique.length)]
+        .category;
     setSelectedCategories((prev) => {
       const newCategories = [...prev];
       newCategories[index] = newCategory;

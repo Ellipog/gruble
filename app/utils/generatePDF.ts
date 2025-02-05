@@ -119,7 +119,7 @@ export const generatePDF = async ({
 
   const opt = {
     margin: 0,
-    filename: `gruble-sheet${emptySheet ? "-empty" : ""}.pdf`,
+    filename: `gruble-ark${emptySheet ? "-empty" : ""}.pdf`,
     image: { type: "jpeg", quality: 0.98 },
     html2canvas: {
       scale: 5,
