@@ -2,9 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Gruble - Word Game Sheet Generator",
+  title: "Gruble-ark Generator",
   description:
-    "Generate custom word game sheets with your preferred categories and letters",
+    "Generer egendefinerte gruble-ark med dine foretrukne kategorier og bokstaver",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -14,12 +18,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="antialiased">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body className="font-sans">{children}</body>
     </html>
   );
